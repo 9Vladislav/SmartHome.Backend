@@ -23,9 +23,7 @@ namespace SmartHome.Api
                 .AddControllers()
                 .AddJsonOptions(options =>
                 {
-                    options.JsonSerializerOptions.Converters.Add(
-                        new JsonStringEnumConverter()
-                    );
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 });
 
             builder.Services.AddEndpointsApiExplorer();
@@ -64,12 +62,17 @@ namespace SmartHome.Api
                 });
             });
 
+            // DbContext (PostgreSQL)
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException("ConnectionStrings:DefaultConnection is missing in configuration (use ENV on deploy).");
+
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
 
             // JwtOptions + Services
             builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IRoomService, RoomService>();
             builder.Services.AddScoped<ISensorService, SensorService>();
@@ -77,18 +80,23 @@ namespace SmartHome.Api
             builder.Services.AddScoped<IEventService, EventService>();
             builder.Services.AddScoped<IIncidentService, IncidentService>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
-
             builder.Services.AddScoped<IAdminService, AdminService>();
 
             // FluentValidation
             builder.Services.AddFluentValidationAutoValidation();
             builder.Services.AddFluentValidationClientsideAdapters();
-            builder.Services.AddValidatorsFromAssembly(
-                typeof(SmartHome.Core.Validation.Auth.LoginDtoValidator).Assembly
-            );
+            builder.Services.AddValidatorsFromAssembly(typeof(SmartHome.Core.Validation.Auth.LoginDtoValidator).Assembly);
 
             // JWT Bearer
-            var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()!;
+            var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>();
+            if (jwt is null ||
+                string.IsNullOrWhiteSpace(jwt.Key) ||
+                string.IsNullOrWhiteSpace(jwt.Issuer) ||
+                string.IsNullOrWhiteSpace(jwt.Audience))
+            {
+                throw new InvalidOperationException("Jwt settings are missing in configuration (Jwt:Key/Issuer/Audience).");
+            }
+
             var key = Encoding.UTF8.GetBytes(jwt.Key);
 
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -109,7 +117,10 @@ namespace SmartHome.Api
 
             var app = builder.Build();
 
-            if (app.Environment.IsDevelopment())
+            var swaggerEnabled = app.Environment.IsDevelopment()
+                                 || builder.Configuration.GetValue<bool>("Swagger:Enabled");
+
+            if (swaggerEnabled)
             {
                 app.UseSwagger();
                 app.UseSwaggerUI(c =>
@@ -118,7 +129,10 @@ namespace SmartHome.Api
                 });
             }
 
-            app.UseHttpsRedirection();
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseHttpsRedirection();
+            }
 
             app.UseAuthentication();
             app.UseAuthorization();
