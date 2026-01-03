@@ -45,6 +45,9 @@ public class EventService : IEventService
         if (security is null || security.Mode != SecurityMode.ARMED)
             return;
 
+        if (ev.Type == EventType.CONTACT_CLOSED)
+            return;
+
         var incident = new Incident
         {
             EventId = ev.EventId,
