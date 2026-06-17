@@ -27,6 +27,19 @@ namespace SmartHome.Api
                 });
 
             builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("FrontendPolicy", policy =>
+                {
+                    policy
+                        .WithOrigins(
+                            "http://localhost:4200",
+                            "https://localhost:4200"
+                        )
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+            });
 
             builder.Services.AddSwaggerGen(c =>
             {
@@ -139,6 +152,8 @@ namespace SmartHome.Api
             {
                 app.UseHttpsRedirection();
             }
+
+            app.UseCors("FrontendPolicy");
 
             app.UseAuthentication();
             app.UseAuthorization();
