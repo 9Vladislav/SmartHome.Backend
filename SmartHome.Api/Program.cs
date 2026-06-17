@@ -74,6 +74,7 @@ namespace SmartHome.Api
             builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IProfileService, ProfileService>();
             builder.Services.AddScoped<IRoomService, RoomService>();
             builder.Services.AddScoped<ISensorService, SensorService>();
             builder.Services.AddScoped<ISecurityService, SecurityService>();
