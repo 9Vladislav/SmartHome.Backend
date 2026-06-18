@@ -71,4 +71,28 @@ public class EventService : IEventService
         _db.Notifications.Add(notification);
         await _db.SaveChangesAsync();
     }
+
+    public async Task<List<EventDto>> GetMyEventsAsync(int userId)
+    {
+        return await _db.Events
+            .AsNoTracking()
+            .Include(e => e.Sensor)
+            .ThenInclude(s => s.Room)
+            .Include(e => e.Incident)
+            .Where(e => e.Sensor.Room.UserId == userId)
+            .OrderByDescending(e => e.OccurredAt)
+            .Select(e => new EventDto
+            {
+                EventId = e.EventId,
+                SensorId = e.SensorId,
+                Type = e.Type,
+                OccurredAt = e.OccurredAt,
+                CreatedAt = e.CreatedAt,
+                SensorName = e.Sensor.Name,
+                RoomName = e.Sensor.Room.Name,
+                IncidentId = e.Incident != null ? e.Incident.IncidentId : null
+            })
+            .ToListAsync();
+    }
+
 }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Core.DTO.Events;
 using SmartHome.Core.Services.Interfaces;
+using System.Security.Claims;
 
 namespace SmartHome.Api.Controllers;
 
@@ -16,6 +17,17 @@ public class EventsController : ControllerBase
     {
         _events = events;
         _config = config;
+    }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetMyEvents()
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var result = await _events.GetMyEventsAsync(userId);
+
+        return Ok(result);
     }
 
     [HttpPost("device")]

@@ -10,4 +10,5 @@ namespace SmartHome.Core.Services.Interfaces;
 public interface IEventService
 {
     Task HandleDeviceEventAsync(CreateEventDto dto);
+    Task<List<EventDto>> GetMyEventsAsync(int userId);
 }
